@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 from requests.auth import HTTPBasicAuth
-from threading import Thread
+from threading import Thread, Lock
 from argparse import Namespace
-from typing import Optional
+from typing import Optional, Dict
 import argparse
 import json
 import os
@@ -71,7 +71,7 @@ class Args:
         [["--no-threads"], _OPTIONS_THREADS_DEFAULT],
     ]
 
-    _parser = None
+    _parser: Optional[Namespace] = None
 
     def __init__(self, parser: Namespace):
         self._set_parser(parser)
@@ -98,6 +98,8 @@ class Applier:
 
     _connector: Optional["GerritConnector"] = None
 
+    _mutex = Lock()
+
     def __init__(self, parser: Namespace):
         self._parser: Namespace = parser
         self._set_connector()
@@ -105,6 +107,9 @@ class Applier:
         self._new_branch: Optional[str] = self._parser.new_branch
         self._use_threads: bool = self._parser.no_threads
         self._aosp_path: Optional[str] = self._parser.aosp_path
+        self._reset: Optional[int] = self._parser.reset
+
+        self._branches: Dict[str, bool] = {}
 
     def _set_connector(self):
         if self._parser.username is None or self._parser.password is None:
@@ -141,9 +146,11 @@ class Applier:
 
         path = self._get_aosp_path() + self._extract_path(cp_url)
 
-        #! TODO: do not create branch if it is already created
         if self._new_branch is not None and len(self._new_branch) > 0:
-            self._run_command(self._build_new_branch_command(path, self._new_branch))
+            with self._mutex:
+                if self._branches.get(path) is None:
+                    self._run_command(self._build_new_branch_command(path, self._new_branch))
+                    self._branches[path] = True
 
         self._run_command(self._build_cherry_pick_command(path, cp_url, refs))
 
