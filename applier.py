@@ -1,5 +1,15 @@
-import os
+from requests.auth import HTTPBasicAuth
 import argparse
+import json
+import os
+import re
+import requests
+import subprocess
+import threading
+
+
+class GerritConnectionError(Exception):
+    pass
 
 
 def arg_parse():
@@ -82,22 +92,110 @@ class Args:
 
 class Applier:
 
+    _connector = None
+
     def __init__(self, parser):
-        pass
+        self._parser = parser
+        self._filepath = self._parser.filepath
+        self._set_connector()
+        self._new_branch = self._parser.new_branch
+        self._use_threads = self._parser.no_threads
+        self._aosp_path = self._parser.aosp_path
+
+    def _set_connector(self):
+        if self._parser.username is None or self._parser.password is None:
+            raise ValueError(
+                "Nor username or password can be null. Please export the enviroment variables or pass via arguments."
+            )
+
+        self._connector = GerritConnector(self._parser.username, self._parser.password)
+
+    def _get_connector(self) -> "GerritConnector":
+        return self._connector
+
+    def apply(self) -> None:
+        self._apply_internal()
+
+    def _extract_path(self, url: str) -> str:
+        pos = max(url.rfind("android"), url.rfind("platform"))
+        return url[pos + len("android/") :].lstrip("/") if pos != -1 else None
+
+    def _apply_internal(self) -> None:
+        with open(self._filepath, "r") as f:
+            urls = f.read().split("\n")
+
+        if self._use_threads == True:
+            self._run_with_threads(urls)
+        else:
+            self._run_without_threads(urls)
+
+    def _apply_individual(self, url: str)-> None:
+        change_id = re.findall(r"(\d+)", url)[0]
+        cp_command = self._get_connector().get_cherry_pick_command(change_id)
+
+        commands = re.findall(r"(?:\w+ \w+) ([^ ]+) ([^ ]+)", cp_command)[0]
+        cp_url, refs = commands
+
+        path = self._extract_path(cp_url) + len(self._aosp_path) > 0 if self._aosp_path else ""
+        print(self._build_cherry_pick_command(path, cp_url, refs))
+
+        self._run_command(self._build_cherry_pick_command(path, cp_url, refs))
+
+    def _run_with_threads(self, urls: str) -> None:
+        threads = []
+        for url in urls:
+            threads.append(threading.Thread(target=self._apply_individual, args=(url,)))
+
+        for thread in threads:
+            thread.start()
+
+        for thread in threads:
+            thread.join()
+
+    def _run_without_threads(self, urls: str) -> None:
+        for url in urls:
+            self._apply_individual(url)
+
+    def _build_cherry_pick_command(self, path: str, url: str, refs: str) -> str:
+        return (
+            f"git -C {path} fetch {url} {refs} && git -C {path} cherry-pick FETCH_HEAD"
+        )
+
+    def _run_command(self, command: str) -> None:
+        subprocess.run(command, shell=True, executable="/bin/bash")
 
 
-class Connector:
+class GerritConnector:
 
-    def __init__(self, user, password):
-        pass
+    _url = "https://gerrit.mot.com/a/changes/?q=CHANGE_ID&o=CURRENT_REVISION&o=CURRENT_COMMIT&o=CURRENT_FILES&o=DOWNLOAD_COMMANDS"
+
+    def __init__(self, user: str, password: str):
+        self.user = user
+        self.password = password
+
+    def _request(self, change_id: str):
+        return requests.get(
+            self._url.replace("CHANGE_ID", change_id),
+            auth=HTTPBasicAuth(self.user, self.password),
+        )
+
+    def get_cherry_pick_command(self, change_id: str) -> str:
+        response = self._request(change_id)
+
+        if response.status_code == 200:
+            response_text = (
+                response.text[5:] if response.text.startswith(")]}'") else response.text
+            )
+            response_json = json.loads(response_text)[0]
+            current_revision = response_json["current_revision"]
+            return response_json["revisions"][f"{current_revision}"]["fetch"]["ssh"][
+                "commands"
+            ]["Cherry Pick"]
+        else:
+            raise GerritConnectionError(
+                f"Failed to access Gerrit API. Status code: {response.status_code}"
+            )
 
 
 if __name__ == "__main__":
-    arg = arg_parse()
-
-    print(f"filepath: {arg.filepath}")
-    print(f"username: {arg.username}")
-    print(f"password: {arg.password}")
-    print(f"new_branch: {arg.new_branch}")
-    print(f"aosp_path: {arg.aosp_path}")
-    print(f"use_threads: {arg.no_threads}")
+    Applier(arg_parse()).apply()
