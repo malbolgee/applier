@@ -154,7 +154,8 @@ class Applier:
     def _run_with_threads(self, urls: str) -> None:
         threads = []
         for url in urls:
-            threads.append(threading.Thread(target=self._apply_individual, args=(url,)))
+            if len(url) > 0:
+                threads.append(threading.Thread(target=self._apply_individual, args=(url,)))
 
         for thread in threads:
             thread.start()
