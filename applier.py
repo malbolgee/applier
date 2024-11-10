@@ -96,8 +96,8 @@ class Applier:
 
     def __init__(self, parser):
         self._parser = parser
-        self._filepath = self._parser.filepath
         self._set_connector()
+        self._filepath = self._parser.filepath
         self._new_branch = self._parser.new_branch
         self._use_threads = self._parser.no_threads
         self._aosp_path = self._parser.aosp_path
@@ -129,17 +129,25 @@ class Applier:
         else:
             self._run_without_threads(urls)
 
-    def _apply_individual(self, url: str)-> None:
+    def _apply_individual(self, url: str) -> None:
         change_id = re.findall(r"(\d+)", url)[0]
         cp_command = self._get_connector().get_cherry_pick_command(change_id)
 
         commands = re.findall(r"(?:\w+ \w+) ([^ ]+) ([^ ]+)", cp_command)[0]
         cp_url, refs = commands
 
-        path = self._extract_path(cp_url) + len(self._aosp_path) > 0 if self._aosp_path else ""
-        print(self._build_cherry_pick_command(path, cp_url, refs))
+        path = self._get_aosp_path() + self._extract_path(cp_url)
+
+        if self._new_branch is not None:
+            self._run_command(self._build_new_branch_command(path, self._new_branch))
 
         self._run_command(self._build_cherry_pick_command(path, cp_url, refs))
+
+    def _get_aosp_path(self):
+        if self._aosp_path is not None:
+            return self._aosp_path
+
+        return ""
 
     def _run_with_threads(self, urls: str) -> None:
         threads = []
@@ -160,6 +168,9 @@ class Applier:
         return (
             f"git -C {path} fetch {url} {refs} && git -C {path} cherry-pick FETCH_HEAD"
         )
+
+    def _build_new_branch_command(self, path, branch_name):
+        return f"git -C {path} checkout -b {branch_name}"
 
     def _run_command(self, command: str) -> None:
         subprocess.run(command, shell=True, executable="/bin/bash")
