@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 from requests.auth import HTTPBasicAuth
-from threading import Thread, Lock
+from threading import Thread
 from argparse import Namespace
-from typing import Optional, Dict
+from typing import Optional
+from subprocess import CompletedProcess
 import argparse
 import json
 import os
@@ -98,23 +99,19 @@ class Applier:
 
     _connector: Optional["GerritConnector"] = None
 
-    _mutex = Lock()
-
     def __init__(self, parser: Namespace):
         self._parser: Namespace = parser
         self._set_connector()
+        self._aosp_path: Optional[str] = self._parser.aosp_path
         self._filepath: str = self._parser.filepath
         self._new_branch: Optional[str] = self._parser.new_branch
         self._use_threads: bool = self._parser.no_threads
-        self._aosp_path: Optional[str] = self._parser.aosp_path
-        self._reset: Optional[int] = self._parser.reset
-
-        self._branches: Dict[str, bool] = {}
 
     def _set_connector(self):
         if self._parser.username is None or self._parser.password is None:
             raise ValueError(
-                "Nor username or password cannot be None. Please export the enviroment variables or pass via arguments."
+                """Neither username nor password can be None. Please export the environment variables or pass via arguments.\n
+                Check README for more details."""
             )
 
         self._connector = GerritConnector(self._parser.username, self._parser.password)
@@ -146,11 +143,8 @@ class Applier:
 
         path = self._get_aosp_path() + self._extract_path(cp_url)
 
-        if self._new_branch is not None and len(self._new_branch) > 0:
-            with self._mutex:
-                if self._branches.get(path) is None:
-                    self._run_command(self._build_new_branch_command(path, self._new_branch))
-                    self._branches[path] = True
+        if self._new_branch and not self._dos_branch_exist(path, self._new_branch):
+            self._run_command(self._build_new_branch_command(path, self._new_branch))
 
         self._run_command(self._build_cherry_pick_command(path, cp_url, refs))
 
@@ -180,14 +174,23 @@ class Applier:
             if len(url) > 0:
                 self._apply_individual(url)
 
+    def _dos_branch_exist(self, path: str, branch_name: str) -> bool:
+        return len(self._run_command_list(self._build_check_branch_command_list(path, branch_name)).stdout) > 0
+
     def _build_cherry_pick_command(self, path: str, url: str, refs: str) -> str:
         return f"git -C {path} fetch {url} {refs} && git -C {path} cherry-pick FETCH_HEAD"
 
     def _build_new_branch_command(self, path: str, branch_name: str) -> str:
         return f"git -C {path} checkout -b {branch_name}"
 
+    def _build_check_branch_command_list(self, path: str, branch_name: str) -> list[str]:
+        return ["git", "-C", path, "branch", "--list", branch_name]
+
     def _run_command(self, command: str) -> None:
         subprocess.run(command, shell=True, executable="/bin/bash")
+
+    def _run_command_list(self, command: list[str]) -> CompletedProcess:
+        return subprocess.run(command, shell=True, capture_output=True)
 
 
 class GerritConnector:
