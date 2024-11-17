@@ -48,7 +48,4 @@ function add_to_bash() {
     fi
 }
 
-install_binary
-# install_man_page
-
-# install
+install
