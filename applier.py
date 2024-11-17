@@ -38,13 +38,13 @@ class Args:
     _OPTIONS_USERNAME_DEFAULT = {
         "type": str,
         "default": os.getenv("GERRIT_USERNAME"),
-        "help": "Set a Gerrit user to use with this session. Otherwise, export a GERRIT_USERNAME enviroment variable.",
+        "help": "Set a Gerrit user to use with this session. Otherwise, export a GERRIT_USERNAME environment variable.",
     }
 
     _OPTIONS_PASSWORD_DEFAULT = {
         "type": str,
         "default": os.getenv("GERRIT_PASSWORD"),
-        "help": "Set a Gerrit password to use with this session. Otherwise, export a GERRIT_PASSWORD enviroment variable.",
+        "help": "Set a Gerrit password to use with this session. Otherwise, export a GERRIT_PASSWORD environment variable.",
     }
 
     _OPTIONS_BRANCH_DEFAULT = {
@@ -63,12 +63,18 @@ class Args:
         "help": "If you don't want the program using threads.",
     }
 
+    _OPTIONS_VERSION_DEFAULT = {
+        "action": "version",
+        "version": "v1.0",
+    }
+
     _ARGUMENTS = [
         [["-f", "--filepath"], _OPTIONS_FILEPATH_DEFAULT],
         [["-u", "--username"], _OPTIONS_USERNAME_DEFAULT],
         [["-p", "--password"], _OPTIONS_PASSWORD_DEFAULT],
         [["-b", "--new-branch"], _OPTIONS_BRANCH_DEFAULT],
         [["-a", "--aosp-path"], _OPTIONS_AOSP_PATH_DEFAULT],
+        [["-v", "--version"], _OPTIONS_VERSION_DEFAULT],
         [["--no-threads"], _OPTIONS_THREADS_DEFAULT],
     ]
 
@@ -195,11 +201,13 @@ class Applier:
 
 class GerritConnector:
 
-    _url = "https://gerrit.mot.com/a/changes/?q=CHANGE_ID&o=CURRENT_REVISION&o=CURRENT_COMMIT&o=CURRENT_FILES&o=DOWNLOAD_COMMANDS"
+    _url: str = (
+        "https://gerrit.mot.com/a/changes/?q=CHANGE_ID&o=CURRENT_REVISION&o=CURRENT_COMMIT&o=CURRENT_FILES&o=DOWNLOAD_COMMANDS"
+    )
 
     def __init__(self, user: str, password: str):
-        self.user = user
-        self.password = password
+        self.user: str = user
+        self.password: str = password
 
     def _request(self, change_id: str):
         response = requests.get(
