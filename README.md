@@ -37,35 +37,28 @@ run the `install.sh` script. This script will create a shortcut for the script i
 
 **NAME**
 
-​	applier - automatically apply cherry-picks to multiple repositories at the same time.
+​&emsp; applier - automatically apply cherry-picks to multiple repositories at the same time.
 
 **SYNOPSIS**
 
-​	applier -f FILEPATH [<u>OPTIONS</u>]
+​&emsp;applier -f FILEPATH [<u>OPTIONS</u>]
 
 **DESCRIPTION**
-	Mandatory arguments to long options are mandatory for short options too.
 
-​	-f, --filepath <u>FILEPATH</u>
-​			The absolute path to a file with a list of Gerrit links
+&emsp; Mandatory arguments to long options are mandatory for short options too.
 
-​	-u, --username <u>USERNAME</u>
-​			Set a Gerrit user to use with this session. Otherwise, export GERRIT_USERNAME environment variable
+&emsp; &emsp; -f, --filepath <u>FILEPATH</u><br>&emsp; &emsp; &emsp; the absolute path to a file with a list of Gerrit links
 
-​	-p, --paswrod <u>PASSWORD</u>
-​			set a Gerrit password to use with this session. Otherwise, export a GERRIT_PASSWORD environment vartiable
+&emsp; &emsp; -u, --username <u>USERNAME</u><br>&emsp; &emsp; &emsp; set a Gerrit user to use with this session. Otherwise, export GERRIT_USERNAME environment variable
 
-​	-b, --new-branch <u>BRANCH_NAME</u>
-​			Choose a branch name to be create in the repos where the cherry-picks will take place
+&emsp; &emsp; -p, --paswrod <u>PASSWORD</u><br>&emsp; &emsp; &emsp; set a Gerrit password to use with this session. Otherwise, export a GERRIT_PASSWORD environment vartiable
 
-​	-a, --aosp-path <u>AOSP_PATH</u>
-​			The absolute path of the AOSP root. If not set, execute this program from the AOSP root
+​&emsp; &emsp; -b, --new-branch <u>BRANCH_NAME</u><br>&emsp; &emsp; &emsp; choose a branch name to be create in the repos where the cherry-picks will take place
 
-​	--no-threads
-​			If you don't want this program using threads
+​&emsp; &emsp;-a, --aosp-path <u>AOSP_PATH</u><br>&emsp; &emsp; &emsp; the absolute path of the AOSP root. If not set, execute this program from the AOSP root
 
-​	-v, --version
-​			show program's version number and exit
+​&emsp; &emsp; --no-threads<br>&emsp; &emsp; &emsp; if you don't want this program using threads
 
-​	-h, --help
-​			show this program help message and exit
+&emsp; &emsp; -v, --version<br>&emsp; &emsp; &emsp; show program's version number and exit
+
+​&emsp; &emsp; -h, --help<br>&emsp; &emsp; &emsp; show program's help message and exit
