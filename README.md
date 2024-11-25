@@ -41,7 +41,7 @@ run the `install.sh` script. This script will create a shortcut for the script i
 
 **SYNOPSIS**
 
-​&emsp;applier -f FILEPATH [<u>OPTIONS</u>]
+​&emsp; applier -f FILEPATH [<u>OPTIONS</u>]
 
 **DESCRIPTION**
 
