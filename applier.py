@@ -149,7 +149,7 @@ class Applier:
 
         path = self._get_aosp_path() + self._extract_path(cp_url)
 
-        if self._new_branch and not self._dos_branch_exist(path, self._new_branch):
+        if self._new_branch and not self._does_branch_exist(path, self._new_branch):
             self._run_command(self._build_new_branch_command(path, self._new_branch))
 
         self._run_command(self._build_cherry_pick_command(path, cp_url, refs))
@@ -180,7 +180,7 @@ class Applier:
             if len(url) > 0:
                 self._apply_individual(url)
 
-    def _dos_branch_exist(self, path: str, branch_name: str) -> bool:
+    def _does_branch_exist(self, path: str, branch_name: str) -> bool:
         return len(self._run_command_list(self._build_check_branch_command_list(path, branch_name)).stdout) > 0
 
     def _build_cherry_pick_command(self, path: str, url: str, refs: str) -> str:
