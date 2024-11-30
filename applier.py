@@ -196,7 +196,7 @@ class Applier:
         subprocess.run(command, shell=True, executable="/bin/bash")
 
     def _run_command_list(self, command: list[str]) -> CompletedProcess:
-        return subprocess.run(command, shell=True, capture_output=True)
+        return subprocess.run(command, capture_output=True)
 
 
 class GerritConnector:
