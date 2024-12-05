@@ -21,7 +21,7 @@ def arg_parse() -> Namespace:
     parser = argparse.ArgumentParser(
         prog="applier",
         description="Automatically apply cherry-picks to multiple repos at the same time.",
-        epilog="Cherry-pick Applier - ThinkShield Enterprise v1.0",
+        epilog="ThinkShield coreutils v1.0",
     )
 
     return Args(parser).parse()
